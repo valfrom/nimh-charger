@@ -29,6 +29,6 @@
 #define TURN_LOAD_OFF() PORTB &= ~(1<<LOAD_PIN)
 
 // Multiplier to convert from analog read to millivolts
-#define VOLTAGE_MULTIPLIER 14.0
+#define VOLTAGE_MULTIPLIER 35
 
 #define AVERAGE_LENGTH 7
