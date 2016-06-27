@@ -100,7 +100,10 @@ void wait_for_battery() {
         if(battery_plugged()) {
             break;
         }
-        _delay_ms(300);
+        TURN_GREEN_LED_ON();
+        _delay_ms(400);
+        TURN_GREEN_LED_OFF();
+        _delay_ms(400);
     }
 }
 
