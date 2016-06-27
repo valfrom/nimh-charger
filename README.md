@@ -1,2 +1,4 @@
 # nimh-charger
-# nimh-charger
+
+Simple NiMh charger with Attiny13
+
