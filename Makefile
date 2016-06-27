@@ -21,7 +21,7 @@ CC             = /Applications/Arduino.app/Contents/Java/hardware/tools/avr/bin/
 
 # Override is only needed by avr-lib build system.
 
-override CFLAGS        = -g -Wall $(OPTIMIZE) -mmcu=$(MCU_TARGET) $(DEFS) -I.
+override CFLAGS        = -std=c99 -g -Wall $(OPTIMIZE) -mmcu=$(MCU_TARGET) $(DEFS) -I.
 override LDFLAGS       = -Wl,-Map,$(PRG).map
 
 OBJCOPY        = /Applications/Arduino.app/Contents/Java/hardware/tools/avr/bin/avr-objcopy

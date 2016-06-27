@@ -1,35 +1,11 @@
 #include <avr/io.h>
 #define F_CPU 1200000
 #include <util/delay.h>
-
-#define PHASE_1_TIME 600
-
-#define IMPULSE_ON_TIME 750
-#define IMPULSE_OFF_TIME 250
-
-#define NO_NEED_TRICKLE_TIME 900
-
-#define FINAL_PHASE_TIME 900
-
-#define CHARGE_CHECK_TIME 30
-
-#define YES 1
-#define NO 0
-
-#define LOAD_PIN PB2
-#define RED_LED_PIN PB0
-#define GREEN_LED_PIN PB1
-
-#define TURN_RED_LED_ON() PORTB |= (1<<RED_LED_PIN)
-#define TURN_RED_LED_OFF() PORTB &= ~(1<<RED_LED_PIN)
-
-#define TURN_GREEN_LED_ON() PORTB |= (1<<GREEN_LED_PIN)
-#define TURN_GREEN_LED_OFF() PORTB &= ~(1<<GREEN_LED_PIN)
-
-#define TURN_LOAD_ON() PORTB |= (1<<LOAD_PIN)
-#define TURN_LOAD_OFF() PORTB &= ~(1<<LOAD_PIN)
+#include "config.h"
 
 volatile int time = 0;
+volatile int maxvoltage = 0;
+volatile int averages[AVERAGE_LENGTH];
 
 void setup() {
     // Set output pins
@@ -53,7 +29,69 @@ void start() {
     _delay_ms(500);
 }
 
+int analog_read() {
+    // Start the conversion
+    ADCSRA |= (1 << ADSC);
+
+    // Wait for it to finish
+    while (ADCSRA & (1 << ADSC)) {
+        ;
+    }
+
+    return ADC;
+}
+
+int read_voltage() {
+    // Set the ADC input to PB4/ADC2
+    ADMUX |= (1 << MUX1);
+    ADMUX |= (0 << MUX0);
+
+    int val = analog_read();
+
+    return val;
+}
+
+int is_charged() {
+    float total = 0;
+    for(int i = 0; i < 30; i++) {
+        total += read_voltage();
+        _delay_ms(1000);
+    }
+
+    int average = ((total / 1023.0) * VOLTAGE_MULTIPLIER) / 30.0 + 0.5;
+
+    // shift averages array to add a new value
+    for (int i = 0; i < AVERAGE_LENGTH - 1; i++) {
+        averages[i] = averages[i + 1];
+    }
+    averages[AVERAGE_LENGTH - 1] = average;
+
+    float s = 0;
+
+    for(int i = 0; i < AVERAGE_LENGTH; i++) {
+        s += averages[i];
+    }
+
+    int mediumvoltage = s / (float)AVERAGE_LENGTH + 0.5;
+
+    if(mediumvoltage > maxvoltage) {
+        maxvoltage = mediumvoltage;
+    }
+
+    //If voltage is dropped then charge is finished
+    if((mediumvoltage + 1) < maxvoltage) {
+        return YES;
+    }
+
+    time += CHARGE_CHECK_TIME;
+    return NO;
+}
+
 int battery_plugged() {
+    int val = read_voltage();
+    if(val > 70) {
+        return YES;
+    }
     return NO;
 }
 
@@ -104,36 +142,6 @@ int is_over_heat() {
         over_heat_error();
         return YES;
     }
-    return NO;
-}
-
-int analog_read() {
-    // Start the conversion
-    ADCSRA |= (1 << ADSC);
-
-    // Wait for it to finish
-    while (ADCSRA & (1 << ADSC)) {
-        ;
-    }
-
-    return ADC;
-}
-
-int read_voltage() {
-    // Set the ADC input to PB4/ADC2
-    ADMUX |= (1 << MUX1);
-    ADMUX |= (0 << MUX0);
-
-    int val = analog_read();
-
-    return val;
-}
-
-int is_charged() {
-    for(int i=1;i<30;i++) {
-
-    }
-    time += CHARGE_CHECK_TIME;
     return NO;
 }
 
