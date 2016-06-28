@@ -3,9 +3,9 @@
 #include <util/delay.h>
 #include "config.h"
 
-volatile int time = 0;
-volatile int maxvoltage = 0;
-volatile int averages[AVERAGE_LENGTH];
+unsigned long time = 0;
+unsigned int maxvoltage = 0;
+unsigned int averages[AVERAGE_LENGTH];
 
 void setup() {
     // Set output pins
@@ -52,27 +52,32 @@ int read_voltage() {
 }
 
 int is_charged() {
-    float total = 0;
+    unsigned int total = 0;
     for(int i = 0; i < 30; i++) {
-        total += read_voltage();
+        int voltage = read_voltage();
+        if(voltage < 70) {
+            return NO;
+        }
+        total += voltage;
         _delay_ms(1000);
+        time += 1000;
     }
 
-    int average = ((total / 1023.0) * VOLTAGE_MULTIPLIER) / 30.0 + 0.5;
+    unsigned int average = (total / 30) * VOLTAGE_MULTIPLIER / 1023;
 
     // shift averages array to add a new value
     for (int i = 0; i < AVERAGE_LENGTH - 1; i++) {
         averages[i] = averages[i + 1];
     }
-    averages[AVERAGE_LENGTH - 1] = average;
+    averages[0] = average;
 
-    float s = 0;
+    unsigned int s = 0;
 
     for(int i = 0; i < AVERAGE_LENGTH; i++) {
         s += averages[i];
     }
 
-    int mediumvoltage = s / (float)AVERAGE_LENGTH + 0.5;
+    int mediumvoltage = s / AVERAGE_LENGTH;
 
     if(mediumvoltage > maxvoltage) {
         maxvoltage = mediumvoltage;
@@ -82,8 +87,7 @@ int is_charged() {
     if((mediumvoltage + 1) < maxvoltage) {
         return YES;
     }
-
-    time += CHARGE_CHECK_TIME;
+    
     return NO;
 }
 
@@ -133,28 +137,44 @@ void charge_finished() {
 }
 
 int is_over_heat() {
-    int over_heat = NO;
+    // int over_heat = NO;
 
-    // Set the ADC input to PB3/ADC3
-    ADMUX |= (1 << MUX1);
-    ADMUX |= (1 << MUX0);
+    // // Set the ADC input to PB3/ADC3
+    // ADMUX |= (1 << MUX1);
+    // ADMUX |= (1 << MUX0);
 
-    int val = analog_read();
+    // int val = analog_read();
 
-    if(val > 512) {
-        over_heat_error();
-        return YES;
-    }
+    // if(val > 512) {
+    //     over_heat_error();
+    //     return YES;
+    // }
     return NO;
 }
 
 void charge_impulse() {
     TURN_LOAD_ON();
+    TURN_RED_LED_ON();
     _delay_ms(IMPULSE_ON_TIME);
     TURN_LOAD_OFF();
+    TURN_RED_LED_OFF();
     _delay_ms(IMPULSE_OFF_TIME);
 
     time += IMPULSE_ON_TIME + IMPULSE_OFF_TIME;
+}
+
+void maximum_time_charge_error() {
+    while(YES) {
+        if(!battery_plugged()) {
+            break;
+        }
+        TURN_GREEN_LED_ON();
+        TURN_RED_LED_ON();
+        _delay_ms(400);
+        TURN_GREEN_LED_OFF();
+        TURN_RED_LED_OFF();
+        _delay_ms(400);
+    }
 }
 
 int charge_phase_1() {
@@ -185,13 +205,26 @@ int charge_main_phase() {
             return NO;
         }
 
-        if(is_charged()) {
+        TURN_LOAD_ON();
+        TURN_RED_LED_ON();
+
+        int charged = is_charged();
+
+        TURN_LOAD_OFF();
+        TURN_RED_LED_OFF();
+
+        if(charged) {
             if(time < NO_NEED_TRICKLE_TIME) {
                 charge_finished();
                 return NO;
             }
             
             return YES;
+        }
+
+        if(time > MAXIMUM_CHARGE_TIME) {
+            maximum_time_charge_error();
+            return NO;
         }
     }
     return YES;
@@ -214,11 +247,10 @@ int charge_final_phase() {
     return YES;
 }
 
-void charge() {
-    time = 0;
+void charge() {    
     TURN_RED_LED_ON();
     TURN_GREEN_LED_OFF();
-    if(charge_phase_1()) {
+    if(!charge_phase_1()) {
         return;
     }
 
@@ -232,11 +264,23 @@ void charge() {
     charge_finished();
 }
 
+void reset() {
+    time = 0;
+    maxvoltage = 0;
+    
+    for(int i = 0; i < AVERAGE_LENGTH; i++) {
+        averages[AVERAGE_LENGTH] = 0;
+    }
+}
+
 void loop() {
     TURN_LOAD_OFF();
+    TURN_RED_LED_OFF();
+    TURN_GREEN_LED_OFF();
     if(!battery_plugged()) {
         wait_for_battery();
     }
+    reset();
     charge();
 }
 

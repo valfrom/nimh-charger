@@ -9,6 +9,7 @@ CONF=/Applications/Arduino.app/Contents/Java/hardware/tools/avr/etc/avrdude.conf
 PROGRAMMER=-cstk500v1 -P $(PORT) -b19200
 
 MCU_TARGET     = attiny13
+CPU			   = attiny13
 
 OPTIMIZE       = -Os
 
