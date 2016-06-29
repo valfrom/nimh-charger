@@ -21,14 +21,6 @@ void setup() {
     ADCSRA |= (1 << ADPS1) | (1 << ADPS0) | (1 << ADEN);
 }
 
-void start() {
-    TURN_RED_LED_ON();
-    TURN_GREEN_LED_ON();
-    _delay_ms(500);
-    TURN_RED_LED_OFF();
-    _delay_ms(500);
-}
-
 int analog_read() {
     // Start the conversion
     ADCSRA |= (1 << ADSC);
@@ -112,6 +104,7 @@ void wait_for_battery() {
 }
 
 void over_heat_error() {
+    TURN_GREEN_LED_OFF();
     TURN_LOAD_OFF();
     while(YES) {
         if(!battery_plugged()) {            
@@ -248,7 +241,7 @@ int charge_final_phase() {
 }
 
 void charge() {    
-    TURN_RED_LED_ON();
+    TURN_RED_LED_OFF();
     TURN_GREEN_LED_OFF();
     if(!charge_phase_1()) {
         return;
@@ -287,7 +280,6 @@ void loop() {
 int main(void) {
     _delay_ms(1000);
     setup();
-    start();
     while(YES) {
         loop();
     }
