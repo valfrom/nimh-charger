@@ -3,7 +3,7 @@
 #include <util/delay.h>
 #include "config.h"
 
-unsigned long time = 0;
+unsigned int time = 0;
 unsigned int maxvoltage = 0;
 unsigned int averages[AVERAGE_LENGTH];
 
@@ -52,7 +52,7 @@ int is_charged() {
         }
         total += voltage;
         _delay_ms(1000);
-        time += 1000;
+        time ++;
     }
 
     unsigned int average = (total / 30) * VOLTAGE_MULTIPLIER / 1023;
@@ -130,18 +130,18 @@ void charge_finished() {
 }
 
 int is_over_heat() {
-    // int over_heat = NO;
+    int over_heat = NO;
 
-    // // Set the ADC input to PB3/ADC3
-    // ADMUX |= (1 << MUX1);
-    // ADMUX |= (1 << MUX0);
+    // Set the ADC input to PB3/ADC3
+    ADMUX |= (1 << MUX1);
+    ADMUX |= (1 << MUX0);
 
-    // int val = analog_read();
+    int val = analog_read();
 
-    // if(val > 512) {
-    //     over_heat_error();
-    //     return YES;
-    // }
+    if(val > 512) {
+        over_heat_error();
+        return YES;
+    }
     return NO;
 }
 
@@ -153,7 +153,7 @@ void charge_impulse() {
     TURN_RED_LED_OFF();
     _delay_ms(IMPULSE_OFF_TIME);
 
-    time += IMPULSE_ON_TIME + IMPULSE_OFF_TIME;
+    time ++;
 }
 
 void maximum_time_charge_error() {

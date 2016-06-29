@@ -6,6 +6,11 @@ HFUSE          = FF
 PORT=`ls /dev/tty.usbmodem*`
 AVRDUDE=/Applications/Arduino.app/Contents/Java/hardware/tools/avr/bin/avrdude
 CONF=/Applications/Arduino.app/Contents/Java/hardware/tools/avr/etc/avrdude.conf
+NM=/Applications/Arduino.app/Contents/Java/hardware/tools/avr/bin/avr-nm
+NM_PARAMS=--print-size --size-sort --radix=d -r
+
+OBJDUMP_PARAMS=-S --disassemble
+
 PROGRAMMER=-cstk500v1 -P $(PORT) -b19200
 
 MCU_TARGET     = attiny13
@@ -28,7 +33,7 @@ override LDFLAGS       = -Wl,-Map,$(PRG).map
 OBJCOPY        = /Applications/Arduino.app/Contents/Java/hardware/tools/avr/bin/avr-objcopy
 OBJDUMP        = /Applications/Arduino.app/Contents/Java/hardware/tools/avr/bin/avr-objdump
 
-all: $(PRG).elf lst text eeprom
+all: $(PRG).elf lst text eeprom dump-asm dump-size
 
 $(PRG).elf: $(OBJ)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
@@ -105,3 +110,9 @@ pdf: $(PRG).pdf
 
 program: hex
 	$(AVRDUDE) -C $(CONF) -p $(CPU) $(PROGRAMMER) -U flash:w:$(PRG).hex -U lfuse:w:0x$(LFUSE):m -U hfuse:w:0x$(HFUSE):m
+
+dump-asm:
+	$(OBJDUMP) $(OBJDUMP_PARAMS) *.o
+
+dump-size:
+	$(NM) $(NM_PARAMS) *.o
