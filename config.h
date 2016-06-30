@@ -1,3 +1,5 @@
+
+#define OVERHEAT_SUPPORT 0
 #define PHASE_1_TIME 600
 
 #define IMPULSE_ON_TIME 750

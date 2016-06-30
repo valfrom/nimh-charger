@@ -105,6 +105,7 @@ void wait_for_battery() {
     }
 }
 
+#if OVERHEAT_SUPPORT
 void over_heat_error() {
     TURN_GREEN_LED_OFF();
     TURN_LOAD_OFF();
@@ -118,6 +119,7 @@ void over_heat_error() {
         _delay_ms(400);
     }
 }
+#endif
 
 void charge_finished() {
     TURN_LOAD_OFF();
@@ -131,6 +133,7 @@ void charge_finished() {
     }
 }
 
+#if OVERHEAT_SUPPORT
 int is_over_heat() {
     // Set the ADC input to PB3/ADC3
     ADMUX |= (1 << MUX1);
@@ -144,6 +147,7 @@ int is_over_heat() {
     }
     return NO;
 }
+#endif
 
 void charge_impulse() {
     TURN_LOAD_ON();
@@ -172,9 +176,11 @@ void maximum_time_charge_error() {
 
 int charge_phase_1() {
     while(YES) {
+        #if OVERHEAT_SUPPORT
         if(is_over_heat()) {
             return NO;
         }
+        #endif
         if(!battery_plugged()) {
             return NO;
         }
@@ -195,9 +201,11 @@ int charge_phase_1() {
 
 int charge_main_phase() {
     while(YES) {
+        #if OVERHEAT_SUPPORT
         if(is_over_heat()) {
             return NO;
         }
+        #endif
 
         if(!battery_plugged()) {
             return NO;
@@ -208,6 +216,8 @@ int charge_main_phase() {
         _delay_ms(FULL_IMPULSE_TIME);
         TURN_LOAD_OFF();
         TURN_RED_LED_OFF();
+
+        time ++;
 
 
         if(is_charged()) {            
@@ -224,9 +234,12 @@ int charge_main_phase() {
 
 int charge_final_phase() {
     while(YES) {
+        #if OVERHEAT_SUPPORT
         if(is_over_heat()) {
             return NO;
         }
+        #endif
+        
         if(!battery_plugged()) {
             return NO;
         }
