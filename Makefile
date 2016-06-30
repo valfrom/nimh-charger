@@ -7,6 +7,7 @@ PORT=`ls /dev/tty.usbmodem*`
 AVRDUDE=/Applications/Arduino.app/Contents/Java/hardware/tools/avr/bin/avrdude
 CONF=/Applications/Arduino.app/Contents/Java/hardware/tools/avr/etc/avrdude.conf
 NM=/Applications/Arduino.app/Contents/Java/hardware/tools/avr/bin/avr-nm
+SIZE=/Applications/Arduino.app/Contents/Java/hardware/tools/avr/bin/avr-size
 NM_PARAMS=--print-size --size-sort --radix=d -r
 
 OBJDUMP_PARAMS=-S --disassemble
@@ -116,3 +117,4 @@ dump-asm:
 
 dump-size:
 	$(NM) $(NM_PARAMS) *.o
+	$(SIZE) *.hex

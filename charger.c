@@ -6,6 +6,8 @@
 unsigned int time = 0;
 unsigned int maxvoltage = 0;
 unsigned int averages[AVERAGE_LENGTH];
+unsigned int total = 0;
+unsigned int numReadings = 0;
 
 void setup() {
     // Set output pins
@@ -44,18 +46,18 @@ int read_voltage() {
 }
 
 int is_charged() {
-    unsigned int total = 0;
-    for(int i = 0; i < 30; i++) {
-        int voltage = read_voltage();
-        if(voltage < 70) {
-            return NO;
-        }
-        total += voltage;
-        _delay_ms(1000);
-        time ++;
+    int voltage = read_voltage();
+    total += voltage;
+
+    numReadings ++;
+
+    if(numReadings < READINGS_COUNT) {
+        return NO;
     }
 
-    unsigned int average = (total / 30) * VOLTAGE_MULTIPLIER / 1023;
+    numReadings = 0;
+
+    unsigned int average = (total / READINGS_COUNT) * VOLTAGE_MULTIPLIER / 1023;
 
     // shift averages array to add a new value
     for (int i = 0; i < AVERAGE_LENGTH - 1; i++) {
@@ -130,8 +132,6 @@ void charge_finished() {
 }
 
 int is_over_heat() {
-    int over_heat = NO;
-
     // Set the ADC input to PB3/ADC3
     ADMUX |= (1 << MUX1);
     ADMUX |= (1 << MUX0);
@@ -181,6 +181,11 @@ int charge_phase_1() {
 
         charge_impulse();
 
+        if(is_charged()) {
+            charge_finished();
+            return NO;
+        }
+
         if(time >= PHASE_1_TIME) {
             break;
         }
@@ -200,18 +205,12 @@ int charge_main_phase() {
 
         TURN_LOAD_ON();
         TURN_RED_LED_ON();
-
-        int charged = is_charged();
-
+        _delay_ms(FULL_IMPULSE_TIME);
         TURN_LOAD_OFF();
         TURN_RED_LED_OFF();
 
-        if(charged) {
-            if(time < NO_NEED_TRICKLE_TIME) {
-                charge_finished();
-                return NO;
-            }
-            
+
+        if(is_charged()) {            
             return YES;
         }
 
@@ -258,6 +257,8 @@ void charge() {
 }
 
 void reset() {
+    numReadings = 0;
+    total = 0;
     time = 0;
     maxvoltage = 0;
     
