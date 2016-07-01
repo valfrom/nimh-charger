@@ -63,7 +63,7 @@ int is_charged() {
     for (int i = 0; i < AVERAGE_LENGTH - 1; i++) {
         averages[i] = averages[i + 1];
     }
-    averages[0] = average;
+    averages[AVERAGE_LENGTH - 1] = average;
 
     unsigned int s = 0;
 
@@ -105,22 +105,6 @@ void wait_for_battery() {
     }
 }
 
-#if OVERHEAT_SUPPORT
-void over_heat_error() {
-    TURN_GREEN_LED_OFF();
-    TURN_LOAD_OFF();
-    while(YES) {
-        if(!battery_plugged()) {            
-            break;
-        }
-        TURN_RED_LED_ON();
-        _delay_ms(400);
-        TURN_RED_LED_OFF();
-        _delay_ms(400);
-    }
-}
-#endif
-
 void charge_finished() {
     TURN_LOAD_OFF();
     TURN_RED_LED_OFF();
@@ -147,20 +131,24 @@ int is_over_heat() {
     }
     return NO;
 }
+
+void over_heat_error() {
+    TURN_GREEN_LED_OFF();
+    TURN_LOAD_OFF();
+    while(YES) {
+        if(!battery_plugged()) {            
+            break;
+        }
+        TURN_RED_LED_ON();
+        _delay_ms(400);
+        TURN_RED_LED_OFF();
+        _delay_ms(400);
+    }
+}
 #endif
 
-void charge_impulse() {
-    TURN_LOAD_ON();
-    TURN_RED_LED_ON();
-    _delay_ms(IMPULSE_ON_TIME);
+void maximum_time_charge_error() {    
     TURN_LOAD_OFF();
-    TURN_RED_LED_OFF();
-    _delay_ms(IMPULSE_OFF_TIME);
-
-    time ++;
-}
-
-void maximum_time_charge_error() {
     while(YES) {
         if(!battery_plugged()) {
             break;
@@ -181,13 +169,20 @@ int charge_phase_1() {
             return NO;
         }
         #endif
+        
         if(!battery_plugged()) {
             return NO;
         }
 
-        charge_impulse();
+        TURN_LOAD_ON();
+        TURN_RED_LED_ON();
+        _delay_ms(IMPULSE_ON_TIME);
+        int charged = is_charged();
+        TURN_LOAD_OFF();
+        TURN_RED_LED_OFF();
+        _delay_ms(IMPULSE_OFF_TIME);
 
-        if(is_charged()) {
+        if(charged) {
             charge_finished();
             return NO;
         }
@@ -200,6 +195,8 @@ int charge_phase_1() {
 }
 
 int charge_main_phase() {
+    TURN_LOAD_ON();
+    TURN_RED_LED_ON();
     while(YES) {
         #if OVERHEAT_SUPPORT
         if(is_over_heat()) {
@@ -211,16 +208,12 @@ int charge_main_phase() {
             return NO;
         }
 
-        TURN_LOAD_ON();
-        TURN_RED_LED_ON();
         _delay_ms(FULL_IMPULSE_TIME);
-        TURN_LOAD_OFF();
-        TURN_RED_LED_OFF();
+        int charged = is_charged();
 
         time ++;
 
-
-        if(is_charged()) {            
+        if(charged) {            
             return YES;
         }
 
@@ -239,11 +232,19 @@ int charge_final_phase() {
             return NO;
         }
         #endif
-        
+
         if(!battery_plugged()) {
             return NO;
         }
-        charge_impulse();
+
+        TURN_LOAD_ON();
+        TURN_RED_LED_ON();
+        _delay_ms(IMPULSE_ON_TIME);
+        TURN_LOAD_OFF();
+        TURN_RED_LED_OFF();
+        _delay_ms(IMPULSE_OFF_TIME);
+
+        time ++;
 
         if(time >= FINAL_PHASE_TIME) {
             break;
