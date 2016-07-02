@@ -177,15 +177,13 @@ int charge_phase_1() {
         TURN_LOAD_ON();
         TURN_RED_LED_ON();
         _delay_ms(IMPULSE_ON_TIME);
-        int charged = is_charged();
+        //Check voltage, but ignore readings
+        is_charged();
         TURN_LOAD_OFF();
         TURN_RED_LED_OFF();
         _delay_ms(IMPULSE_OFF_TIME);
 
-        if(charged) {
-            charge_finished();
-            return NO;
-        }
+        time++;
 
         if(time >= PHASE_1_TIME) {
             break;
