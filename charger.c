@@ -59,7 +59,7 @@ int is_charged() {
 
     unsigned int average = (total / READINGS_COUNT) * VOLTAGE_MULTIPLIER / 1023;
 
-    // shift averages array to add a new value
+    // Shift averages array to add a new value
     for (int i = 0; i < AVERAGE_LENGTH - 1; i++) {
         averages[i] = averages[i + 1];
     }
@@ -77,8 +77,8 @@ int is_charged() {
         maxvoltage = mediumvoltage;
     }
 
-    //If voltage is dropped then charge is finished
-    if((mediumvoltage + 1) < maxvoltage) {
+    // If voltage is dropped then charge is finished
+    if((mediumvoltage + 100) < maxvoltage) {
         return YES;
     }
     
